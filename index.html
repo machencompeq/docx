@@ -32,11 +32,38 @@
       color: white;
       padding: 16px 28px;
       flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
 
     header h1 {
       margin: 0;
       font-size: 22px;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      font-size: 20px;
+      line-height: 1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* 手機版遮罩 */
+    .backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 20;
+    }
+    .backdrop.show {
+      display: block;
     }
 
     .layout {
@@ -226,16 +253,74 @@
       margin-bottom: 20px;
       font-size: 14px;
     }
+
+    /* ===== 手機 / 平板 響應式 ===== */
+    @media (max-width: 768px) {
+      header {
+        padding: 14px 18px;
+      }
+      header h1 {
+        font-size: 18px;
+      }
+      .menu-toggle {
+        display: inline-block;
+      }
+
+      /* 側邊欄改為由左滑出的抽屜 */
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 30;
+        width: 80%;
+        max-width: 300px;
+        flex-basis: auto;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .file-list li {
+        padding: 14px 20px;
+        font-size: 16px;
+      }
+
+      .content {
+        padding: 16px;
+      }
+      main {
+        padding: 22px 18px;
+        border-radius: 8px;
+      }
+      #viewer {
+        font-size: 16px;
+      }
+      #viewer pre {
+        padding: 12px;
+        font-size: 14px;
+      }
+      #viewer table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
   </style>
 </head>
 
 <body>
   <header>
+    <button class="menu-toggle" id="menuToggle" aria-label="開啟報告清單">☰</button>
     <h1>每日工作報告閱讀器</h1>
   </header>
 
   <div class="layout">
-    <aside class="sidebar">
+    <div class="backdrop" id="backdrop"></div>
+    <aside class="sidebar" id="sidebar">
       <h2>報告清單</h2>
       <ul class="file-list" id="fileList"></ul>
 
@@ -276,6 +361,21 @@
     const fileListEl = document.getElementById("fileList");
     const fileInput = document.getElementById("mdFile");
     const viewer = document.getElementById("viewer");
+    const sidebar = document.getElementById("sidebar");
+    const backdrop = document.getElementById("backdrop");
+    const menuToggle = document.getElementById("menuToggle");
+
+    // 手機版：抽屜開合
+    function openSidebar() {
+      sidebar.classList.add("open");
+      backdrop.classList.add("show");
+    }
+    function closeSidebar() {
+      sidebar.classList.remove("open");
+      backdrop.classList.remove("show");
+    }
+    menuToggle.addEventListener("click", openSidebar);
+    backdrop.addEventListener("click", closeSidebar);
 
     // 建立側邊欄清單
     FILES.forEach((name, idx) => {
@@ -295,6 +395,7 @@
 
     async function loadFile(name, li) {
       setActive(li);
+      closeSidebar(); // 手機版選完自動收起
       viewer.innerHTML = '<div class="empty">載入中…</div>';
       try {
         const res = await fetch(encodeURIComponent(name));
